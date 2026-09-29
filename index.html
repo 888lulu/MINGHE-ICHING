@@ -446,13 +446,56 @@ a:hover { color: var(--gold-bright); }
 .jj-author { color: var(--gold); font-weight: 600; }
 
 /* 爻下說文解字 */
-.line-shuowen { margin-top: 10px; border: 1px solid rgba(201,168,124,0.18); border-radius: 5px; background: rgba(201,168,124,0.035); padding: 10px 12px 8px; }
-.sw-head { font-size: 0.66rem; letter-spacing: 0.2em; color: var(--gold); font-weight: 600; margin-bottom: 6px; opacity: 0.85; }
-.sw-item { display: flex; gap: 10px; padding: 3px 0; align-items: baseline; }
+.line-shuowen {
+  margin-top: 10px;
+  border: 1px solid rgba(201,168,124,0.14);
+  border-left: 2px solid rgba(201,168,124,0.32);
+  border-radius: 3px;
+  background: linear-gradient(135deg, rgba(201,168,124,0.05) 0%, rgba(201,168,124,0.012) 100%);
+  padding: 0 14px;
+  overflow: hidden;
+  transition: border-color 0.3s var(--transition), background 0.3s var(--transition), box-shadow 0.3s var(--transition);
+}
+.line-shuowen:hover {
+  border-color: rgba(201,168,124,0.26);
+  border-left-color: rgba(201,168,124,0.5);
+  background: linear-gradient(135deg, rgba(201,168,124,0.07) 0%, rgba(201,168,124,0.02) 100%);
+}
+.line-shuowen.open {
+  border-color: rgba(201,168,124,0.3);
+  border-left-color: var(--gold);
+  background: linear-gradient(135deg, rgba(201,168,124,0.075) 0%, rgba(201,168,124,0.02) 100%);
+  box-shadow: 0 0 20px rgba(201,168,124,0.05), inset 0 0 30px rgba(201,168,124,0.015);
+  padding-bottom: 10px;
+}
+.sw-head {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  font-size: 0.66rem; letter-spacing: 0.2em; color: var(--gold); font-weight: 600;
+  padding: 11px 0; cursor: pointer; user-select: none; text-align: left;
+  background: transparent; border: none;
+  opacity: 0.85; transition: opacity 0.2s;
+}
+.sw-head:hover { opacity: 1; }
+.sw-head:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; }
+.sw-hint { margin-left: auto; font-size: 0.6rem; letter-spacing: 0.12em; color: var(--gold-dim); font-weight: 400; transition: color 0.3s; }
+.line-shuowen.open .sw-hint { color: var(--gold); }
+.sw-chevron { position: relative; width: 12px; height: 12px; flex-shrink: 0; transition: transform 0.3s var(--transition); }
+.sw-chevron::before {
+  content: ''; position: absolute; width: 7px; height: 7px;
+  border-right: 1.5px solid var(--gold-dim); border-bottom: 1.5px solid var(--gold-dim);
+  transform: rotate(45deg); margin: 1px 0 0 2px;
+  transition: border-color 0.3s;
+}
+.line-shuowen.open .sw-chevron::before { border-color: var(--gold); }
+.line-shuowen.open .sw-chevron { transform: rotate(180deg); }
+.sw-body { max-height: 0; overflow: hidden; transition: max-height 0.4s var(--transition); }
+.line-shuowen.open .sw-body { max-height: 600px; }
+.sw-item { display: flex; gap: 10px; padding: 5px 0; align-items: baseline; border-top: 1px solid rgba(201,168,124,0.08); }
+.sw-item:first-child { border-top: 1px solid rgba(201,168,124,0.14); padding-top: 9px; }
 .sw-char { flex-shrink: 0; min-width: 44px; font-size: 0.92rem; color: var(--gold-bright); font-weight: 600; }
-.sw-benzi { font-size: 0.7rem; color: var(--ink-faint); margin-left: 4px; font-weight: 400; }
-.sw-def { flex: 1; font-size: 0.78rem; line-height: 1.7; color: var(--ink-dim); letter-spacing: 0.02em; }
-.sw-fan { color: var(--ink-faint); margin-left: 8px; font-size: 0.7rem; white-space: nowrap; }
+.sw-benzi { font-size: 0.7rem; color: var(--ink-dim); margin-left: 4px; font-weight: 400; }
+.sw-def { flex: 1; font-size: 0.78rem; line-height: 1.75; color: var(--ink-dim); letter-spacing: 0.02em; }
+.sw-fan { color: var(--gold-dim); margin-left: 8px; font-size: 0.7rem; white-space: nowrap; }
 
 /* 東坡易傳內容行（面板複用 jijie 樣式） */
 .dongpo-section { padding: 0 0 24px; }
@@ -1369,7 +1412,7 @@ function renderJijieLines(text) {
 }
 
 
-/* 渲染一爻的說文解字 */
+/* 渲染一爻的說文解字（默認收起，點擊標題展開） */
 function renderShuowen(entries) {
   if (!entries || !entries.length) return '';
   var items = '';
@@ -1380,7 +1423,14 @@ function renderShuowen(entries) {
       (en.p ? '<span class="sw-fan">' + en.p + '</span>' : '') +
       '</span></div>';
   });
-  return '<div class="line-shuowen"><div class="sw-head">說 文 解 字</div>' + items + '</div>';
+  return '<div class="line-shuowen">' +
+    '<button class="sw-head" type="button" aria-expanded="false">' +
+    '<span>說 文 解 字</span>' +
+    '<span class="sw-hint">展 開</span>' +
+    '<span class="sw-chevron" aria-hidden="true"></span>' +
+    '</button>' +
+    '<div class="sw-body">' + items + '</div>' +
+    '</div>';
 }
 
 
@@ -1513,32 +1563,38 @@ function renderDetail(id) {
       '</div>';
   }
 
-  /* 十翼折叠面板 */
-  var shiyiHTML = '<div class="shiyi-section">' +
-    '<div class="section-label" style="text-align:center;">十 翼</div>';
-  
-  var accordions = [
+  /* 十翼折叠面板：彖/大象/序卦/說卦/雜卦，置於卦辭之後、爻辭之前 */
+  function buildAccordion(acc) {
+    return '<div class="accordion-item" data-acc="' + acc.key + '">' +
+      '<div class="accordion-header">' +
+      '<span class="acc-title">' + acc.title + '</span>' +
+      '<span class="acc-icon"></span>' +
+      '</div>' +
+      '<div class="accordion-body">' +
+      '<div class="accordion-content">' + acc.content + '</div>' +
+      '</div></div>';
+  }
+  var shiyiAccordions = [
     {key:'tuan', title:'彖 傳', content: hex.tuan},
     {key:'xiangDa', title:'大象傳', content: hex.xiangDa},
     {key:'xugu', title:'序 卦 傳', content: hex.xugu},
     {key:'shuogua', title:'說 卦 傳', content: hex.shuogua},
-    {key:'xici', title:'繫 辭 傳', content: hex.xici},
     {key:'zagua', title:'雜 卦 傳', content: hex.zagua}
   ];
-  
-  accordions.forEach(function(acc, idx) {
-    if (acc.content && acc.content.trim()) {
-      shiyiHTML += '<div class="accordion-item" data-acc="' + acc.key + '">' +
-        '<div class="accordion-header">' +
-        '<span class="acc-title">' + acc.title + '</span>' +
-        '<span class="acc-icon"></span>' +
-        '</div>' +
-        '<div class="accordion-body">' +
-        '<div class="accordion-content">' + acc.content + '</div>' +
-        '</div></div>';
-    }
+  var shiyiHTML = '<div class="shiyi-section">' +
+    '<div class="section-label" style="text-align:center;">十 翼</div>';
+  shiyiAccordions.forEach(function(acc) {
+    if (acc.content && acc.content.trim()) shiyiHTML += buildAccordion(acc);
   });
   shiyiHTML += '</div>';
+
+  /* 繫辭傳為通論，保留在爻辭之後 */
+  var xiciHTML = '';
+  if (hex.xici && hex.xici.trim()) {
+    xiciHTML = '<div class="shiyi-section xici-section">' +
+      buildAccordion({key:'xici', title:'繫 辭 傳', content: hex.xici}) +
+      '</div>';
+  }
 
   /* 周易集解面板 */
   var jijieHTML = '<div class="jijie-section"><div class="jijie-panel">' +
@@ -1615,11 +1671,12 @@ function renderDetail(id) {
     '<div class="section-label">卦 辭</div>' +
     '<div class="judgment-text">' + hex.judgment + '</div>' +
     '</div>' +
+    shiyiHTML +
     '<div class="lines-section">' +
     '<div class="section-label" style="text-align:center;">爻 辭</div>' +
     linesHTML +
     '</div>' +
-    shiyiHTML +
+    xiciHTML +
     jijieHTML +
     dongpoHTML +
     laizhuHTML +
@@ -1633,6 +1690,17 @@ function renderDetail(id) {
   document.querySelectorAll('.accordion-header').forEach(function(header) {
     header.addEventListener('click', function() {
       this.parentElement.classList.toggle('open');
+    });
+  });
+
+  /* 說文解字展開收起 */
+  document.querySelectorAll('.sw-head').forEach(function(sh) {
+    sh.addEventListener('click', function() {
+      var box = this.closest('.line-shuowen');
+      var open = box.classList.toggle('open');
+      this.setAttribute('aria-expanded', open ? 'true' : 'false');
+      var hint = box.querySelector('.sw-hint');
+      if (hint) hint.textContent = open ? '收 起' : '展 開';
     });
   });
 
@@ -1949,3 +2017,4 @@ if (location.hash.indexOf('#/hexagram/') === 0) {
 </script>
 </body>
 </html>
+
